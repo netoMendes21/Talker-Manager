@@ -8,6 +8,23 @@ app.use(express.json());
 const HTTP_OK_STATUS = 200;
 const PORT = process.env.PORT || '3001';
 
+const geradorToken = () => {
+  const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let token = '';
+  
+  for (let i = 0; i < 16; i += 1) {
+    token += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+  }
+  return token;
+};
+
+function validarToken(req, res, next) {
+  const { authorization } = req.headers;
+  if (!authorization) return res.status(401).json({ message: 'Token não encontrado' });
+  if (authorization.length !== 16) return res.status(401).json({ message: 'Token inválido' });
+  next();
+}
+
 function validarNome(name) {
   if (!name) {
     return { message: 'O campo "name" é obrigatório' };
@@ -29,7 +46,7 @@ function validarAge(age) {
 }
 
 function validarRate(rate) {
-  if (!rate) {
+  if (typeof rate === 'undefined') {
     return { message: 'O campo "rate" é obrigatório' };
   }
   if (rate < 1 || rate > 5 || !Number.isInteger(rate)) {
@@ -62,6 +79,18 @@ function validarTalker(talker) {
   return {};
 }
 
+app.post('/talker', validarToken, async (req, res) => {
+  const { name, age, talk } = req.body;
+  const talkers = await fs.readFile(path.join(__dirname, 'talker.json'), 'utf-8');
+  const talkersJson = JSON.parse(talkers);
+  const talker = { name, age, talk, id: talkersJson.length + 1 };
+  const validacao = validarTalker(talker);
+  if (validacao.message) return res.status(400).json({ message: validacao.message });
+  talkersJson.push(talker);
+  await fs.writeFile(path.join(__dirname, 'talker.json'), JSON.stringify(talkersJson));
+  return res.status(201).json(talker);
+});
+
 // não remova esse endpoint, e para o avaliador funcionar
 app.get('/', (_request, response) => {
   response.status(HTTP_OK_STATUS).send();
@@ -83,16 +112,6 @@ app.get('/talker/:id', async (req, res) => {
   return res.status(200).json(talker);
 });
 
-const geradorToken = () => {
-  const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let token = '';
-  
-  for (let i = 0; i < 16; i += 1) {
-    token += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
-  }
-  return token;
-};
-
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -112,18 +131,6 @@ app.post('/login', async (req, res) => {
   }
   const token = geradorToken();
   return res.status(200).json({ token });
-});
-
-app.post('/talker', geradorToken, async (req, res) => {
-  const { name, age, talk } = req.body;
-  const talkers = await fs.readFile(path.join(__dirname, 'talker.json'), 'utf-8');
-  const talkersJson = JSON.parse(talkers);
-  const talker = { name, age, talk, id: talkersJson.length + 1 };
-  const validacao = validarTalker(talker);
-  if (validacao.message) return res.status(400).json({ message: validacao.message });
-  talkersJson.push(talker);
-  await fs.writeFile(path.join(__dirname, 'talker.json'), JSON.stringify(talkersJson));
-  return res.status(201).json(talker);
 });
 
 app.listen(PORT, () => {

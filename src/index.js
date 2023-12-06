@@ -8,6 +8,8 @@ app.use(express.json());
 const HTTP_OK_STATUS = 200;
 const PORT = process.env.PORT || '3001';
 
+const talkerJson = 'talker.json';
+
 const geradorToken = () => {
   const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let token = '';
@@ -81,14 +83,24 @@ function validarTalker(talker) {
 
 app.post('/talker', validarToken, async (req, res) => {
   const { name, age, talk } = req.body;
-  const talkers = await fs.readFile(path.join(__dirname, 'talker.json'), 'utf-8');
+  const talkers = await fs.readFile(path.join(__dirname, talkerJson), 'utf-8');
   const talkersJson = JSON.parse(talkers);
   const talker = { name, age, talk, id: talkersJson.length + 1 };
   const validacao = validarTalker(talker);
   if (validacao.message) return res.status(400).json({ message: validacao.message });
   talkersJson.push(talker);
-  await fs.writeFile(path.join(__dirname, 'talker.json'), JSON.stringify(talkersJson));
+  await fs.writeFile(path.join(__dirname, talkerJson), JSON.stringify(talkersJson));
   return res.status(201).json(talker);
+});
+
+app.get('/talker/search', validarToken, async (req, res) => {
+  const { q } = req.query;
+  const talkers = await fs.readFile(path.join(__dirname, talkerJson), 'utf-8');
+  const talkersJson = JSON.parse(talkers);
+  const talkersFilter = talkersJson.filter((talker) => talker.name.includes(q));
+  if (typeof q === 'undefined') return res.status(200).json(talkersJson);
+  if (!talkersFilter) return res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
+  return res.status(200).json(talkersFilter);
 });
 
 // não remova esse endpoint, e para o avaliador funcionar
@@ -97,7 +109,7 @@ app.get('/', (_request, response) => {
 });
 
 app.get('/talker', async (_req, res) => {
-  const talkers = await fs.readFile(path.join(__dirname, 'talker.json'), 'utf-8');
+  const talkers = await fs.readFile(path.join(__dirname, talkerJson), 'utf-8');
   const talkersJson = JSON.parse(talkers);
   if (!talkersJson) return res.status(200).json([]);
   return res.status(200).json(talkersJson);
@@ -105,7 +117,7 @@ app.get('/talker', async (_req, res) => {
 
 app.get('/talker/:id', async (req, res) => {
   const { id } = req.params;
-  const talkerId = await fs.readFile(path.join(__dirname, 'talker.json'), 'utf-8');
+  const talkerId = await fs.readFile(path.join(__dirname, talkerJson), 'utf-8');
   const talkerIdJson = JSON.parse(talkerId);
   const talker = talkerIdJson.find((talkerFind) => talkerFind.id === Number(id));
   if (!talker) return res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
@@ -131,6 +143,32 @@ app.post('/login', async (req, res) => {
   }
   const token = geradorToken();
   return res.status(200).json({ token });
+});
+
+app.put('/talker/:id', validarToken, async (req, res) => {
+  const { id } = req.params;
+  const talkerId = await fs.readFile(path.join(__dirname, talkerJson), 'utf-8');
+  const talkerIdJson = JSON.parse(talkerId);
+  const { name, age, talk } = req.body;
+  const validacao = { name, age, talk, id: Number(id) };
+  const validacaoTalker = validarTalker(validacao);
+  if (validacaoTalker.message) return res.status(400).json({ message: validacaoTalker.message });
+  const talker = talkerIdJson.findIndex((talkerFind) => talkerFind.id === Number(id));
+  if (talker === -1) return res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
+  talkerIdJson[talker] = { name, age, talk, id: Number(id) };
+  await fs.writeFile(path.join(__dirname, talkerJson), JSON.stringify(talkerIdJson, null, 2));
+  return res.status(200).json(talkerIdJson[talker]);
+});
+
+app.delete('/talker/:id', validarToken, async (req, res) => {
+  const { id } = req.params;
+  const talkerId = await fs.readFile(path.join(__dirname, talkerJson), 'utf-8');
+  const talkerIdJson = JSON.parse(talkerId);
+  const talker = talkerIdJson.findIndex((talkerFind) => talkerFind.id === Number(id));
+  if (talker === -1) return res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
+  talkerIdJson.splice(talker, 1);
+  await fs.writeFile(path.join(__dirname, talkerJson), JSON.stringify(talkerIdJson, null, 2));
+  return res.status(204).json({ message: 'Pessoa palestrante deletada com sucesso' });
 });
 
 app.listen(PORT, () => {

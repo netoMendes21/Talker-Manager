@@ -8,6 +8,64 @@ app.use(express.json());
 const HTTP_OK_STATUS = 200;
 const PORT = process.env.PORT || '3001';
 
+function validarNome(name) {
+  if (!name) {
+    return { message: 'O campo "name" é obrigatório' };
+  }
+  if (name.length < 3) {
+    return { message: 'O "name" deve ter pelo menos 3 caracteres' };
+  }
+  return {};
+}
+
+function validarAge(age) {
+  if (!age) {
+    return { message: 'O campo "age" é obrigatório' };
+  }
+  if (age < 18) {
+    return { message: 'O campo "age" deve ser um número inteiro igual ou maior que 18' };
+  }
+  return {};
+}
+
+function validarTalk(talk) {
+  if (!talk) {
+    return { message: 'O campo "talk" é obrigatório' };
+  }
+  return {};
+}
+
+function validarWatchedAt(watchedAt) {
+  if (!watchedAt) {
+    return { message: 'O campo "watchedAt" é obrigatório ' };
+  }
+  if (!watchedAt.match(/\d{2}\/\d{2}\/\d{4}/)) {
+    return { message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' };
+  }
+  return {};
+}
+
+function validarRate(rate) {
+  if (!rate) {
+    return { message: 'O campo "rate" é obrigatório' };
+  }
+  if (rate < 1 || rate > 5 || !Number.isInteger(rate)) {
+    return { message: 'O campo "rate" deve ser um número inteiro entre 1 e 5' };
+  }
+  return {};
+}
+
+function validarTalker(talker) {
+  const nome = validarNome(talker.name);
+  const idade = validarAge(talker.age);
+  const talk = validarTalk(talker.talk);
+  
+  if (nome.message) return nome;
+  if (idade.message) return idade;
+  if (talk.message && talk) return talk;
+  return {};
+}
+
 // não remova esse endpoint, e para o avaliador funcionar
 app.get('/', (_request, response) => {
   response.status(HTTP_OK_STATUS).send();
@@ -58,6 +116,18 @@ app.post('/login', async (req, res) => {
   }
   const token = geradorToken();
   return res.status(200).json({ token });
+});
+
+app.post('/talker', geradorToken, async (req, res) => {
+  const { name, age, talk } = req.body;
+  const talkers = await fs.readFile(path.join(__dirname, 'talker.json'), 'utf-8');
+  const talkersJson = JSON.parse(talkers);
+  const talker = { name, age, talk, id: talkersJson.length + 1 };
+  const validacao = validarTalker(talker);
+  if (validacao.message) return res.status(400).json({ message: validacao.message });
+  talkersJson.push(talker);
+  await fs.writeFile(path.join(__dirname, 'talker.json'), JSON.stringify(talkersJson));
+  return res.status(201).json(talker);
 });
 
 app.listen(PORT, () => {

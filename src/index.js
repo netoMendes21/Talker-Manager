@@ -35,25 +35,25 @@ function validarTalk(talk) {
   return {};
 }
 
-function validarWatchedAt(watchedAt) {
-  if (!watchedAt) {
-    return { message: 'O campo "watchedAt" é obrigatório ' };
-  }
-  if (!watchedAt.match(/\d{2}\/\d{2}\/\d{4}/)) {
-    return { message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' };
-  }
-  return {};
-}
+// function validarWatchedAt(watchedAt) {
+//   if (!watchedAt) {
+//     return { message: 'O campo "watchedAt" é obrigatório ' };
+//   }
+//   if (!watchedAt.match(/\d{2}\/\d{2}\/\d{4}/)) {
+//     return { message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' };
+//   }
+//   return {};
+// }
 
-function validarRate(rate) {
-  if (!rate) {
-    return { message: 'O campo "rate" é obrigatório' };
-  }
-  if (rate < 1 || rate > 5 || !Number.isInteger(rate)) {
-    return { message: 'O campo "rate" deve ser um número inteiro entre 1 e 5' };
-  }
-  return {};
-}
+// function validarRate(rate) {
+//   if (!rate) {
+//     return { message: 'O campo "rate" é obrigatório' };
+//   }
+//   if (rate < 1 || rate > 5 || !Number.isInteger(rate)) {
+//     return { message: 'O campo "rate" deve ser um número inteiro entre 1 e 5' };
+//   }
+//   return {};
+// }
 
 function validarTalker(talker) {
   const nome = validarNome(talker.name);

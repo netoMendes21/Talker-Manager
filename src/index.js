@@ -22,8 +22,18 @@ function validarAge(age) {
   if (!age) {
     return { message: 'O campo "age" é obrigatório' };
   }
-  if (age < 18) {
+  if (age < 18 || !Number.isInteger(age) || typeof age !== 'number') {
     return { message: 'O campo "age" deve ser um número inteiro igual ou maior que 18' };
+  }
+  return {};
+}
+
+function validarRate(rate) {
+  if (!rate) {
+    return { message: 'O campo "rate" é obrigatório' };
+  }
+  if (rate < 1 || rate > 5 || !Number.isInteger(rate)) {
+    return { message: 'O campo "rate" deve ser um número inteiro entre 1 e 5' };
   }
   return {};
 }
@@ -32,28 +42,14 @@ function validarTalk(talk) {
   if (!talk) {
     return { message: 'O campo "talk" é obrigatório' };
   }
-  return {};
+  if (!talk.watchedAt) {
+    return { message: 'O campo "watchedAt" é obrigatório' };
+  }
+  if (!talk.watchedAt.match(/\d{2}\/\d{2}\/\d{4}/)) {
+    return { message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' };
+  }
+  if (validarRate(talk.rate)) return validarRate(talk.rate);
 }
-
-// function validarWatchedAt(watchedAt) {
-//   if (!watchedAt) {
-//     return { message: 'O campo "watchedAt" é obrigatório ' };
-//   }
-//   if (!watchedAt.match(/\d{2}\/\d{2}\/\d{4}/)) {
-//     return { message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' };
-//   }
-//   return {};
-// }
-
-// function validarRate(rate) {
-//   if (!rate) {
-//     return { message: 'O campo "rate" é obrigatório' };
-//   }
-//   if (rate < 1 || rate > 5 || !Number.isInteger(rate)) {
-//     return { message: 'O campo "rate" deve ser um número inteiro entre 1 e 5' };
-//   }
-//   return {};
-// }
 
 function validarTalker(talker) {
   const nome = validarNome(talker.name);
